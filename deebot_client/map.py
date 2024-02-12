@@ -100,6 +100,9 @@ class Path(svg.Path):  # noqa: TID251
 _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 50
 _ROUND_TO_DIGITS = 3
+_PIECE_SIZE = 100
+_PIECE_COUNT_HORIZONTAL=8
+_PIECE_COUNT_VERTICAL=8
 
 
 @dataclasses.dataclass(frozen=True)
@@ -452,12 +455,12 @@ class Map:
         image_x = 0
         image_y = 0
 
-        for i in range(64):
+        for i in range(_PIECE_COUNT_HORIZONTAL * _PIECE_COUNT_VERTICAL):
             if i > 0:
-                if i % 8 != 0:
-                    image_y += 100
+                if i % _PIECE_COUNT_HORIZONTAL != 0:
+                    image_y += _PIECE_SIZE
                 else:
-                    image_x += 100
+                    image_x += _PIECE_SIZE
                     image_y = 0
 
             current_piece = self._map_data.map_pieces[i]
@@ -545,7 +548,7 @@ class Map:
 
     def _get_background_image(self) -> BackgroundImage | None:
         """Return background image."""
-        image = Image.new("P", (6400, 6400))
+        image = Image.new("P", (_PIECE_COUNT_HORIZONTAL * _PIECE_SIZE, _PIECE_COUNT_VERTICAL * _PIECE_SIZE))
         self._draw_map_pieces(image)
 
         bounding_box = image.getbbox()
@@ -678,7 +681,7 @@ class MapPiece:
     def image(self) -> Image.Image:
         """I'm the 'x' property."""
         if not self.in_use or self._image is None:
-            return Image.new("P", (100, 100))
+            return Image.new("P", (_PIECE_SIZE, _PIECE_SIZE))
         return self._image
 
     def update_points(self, base64_data: str) -> None:
@@ -691,7 +694,7 @@ class MapPiece:
             self._on_change()
 
         if self.in_use:
-            im = Image.frombytes("P", (100, 100), decoded, "raw", "P", 0, -1)
+            im = Image.frombytes("P", (_PIECE_SIZE, _PIECE_SIZE), decoded, "raw", "P", 0, -1)
             self._image = im.rotate(-90)
         else:
             self._image = None
