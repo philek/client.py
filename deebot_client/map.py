@@ -155,12 +155,10 @@ class TracePoint(Point):
 class AxisManipulation:
     """Map manipulation."""
 
-    map_shift: float
-    svg_max: float
     _transform: Callable[[float, float], float] | None = None
 
     def __post_init__(self) -> None:
-        self._svg_center = self.svg_max / 2
+        self._svg_center = _OFFSET
 
     def transform(self, value: float) -> float:
         """Transform value."""
@@ -181,7 +179,6 @@ class MapManipulation:
 class BackgroundImage:
     """Background image."""
 
-    bounding_box: tuple[float, float, float, float]
     image: bytes
 
 
@@ -282,9 +279,7 @@ def _calc_value(value: float, axis_manipulation: AxisManipulation) -> float:
     try:
         if value is not None:
             # SVG allows sub-pixel precision, so we use floating point coordinates for better placement.
-            new_value = (
-                (float(value) / _PIXEL_WIDTH) + _OFFSET - axis_manipulation.map_shift
-            )
+            new_value = (float(value) / _PIXEL_WIDTH) + _OFFSET
             new_value = axis_manipulation.transform(new_value)
 
             return round(new_value, _ROUND_TO_DIGITS)
@@ -580,21 +575,16 @@ class Map:
 
     def _get_background_image(self) -> BackgroundImage | None:
         """Return background image."""
-        image = Image.new("P", (6400, 6400))
+        image = Image.new("P", (800, 800))
         self._draw_map_pieces(image)
 
-        bounding_box = image.getbbox()
-        if bounding_box is None:
-            return None
-
-        image = ImageOps.flip(image.crop(bounding_box))
+        image = ImageOps.flip(image)
         image = _set_image_palette(image)
 
         buffered = BytesIO()
         image.save(buffered, format="PNG", optimize=True)
 
         return BackgroundImage(
-            bounding_box,
             buffered.getvalue(),
         )
 
@@ -625,27 +615,20 @@ class Map:
             return None
 
         manipulation = MapManipulation(
-            AxisManipulation(
-                map_shift=background.bounding_box[0],
-                svg_max=background.bounding_box[2] - background.bounding_box[0],
-            ),
-            AxisManipulation(
-                map_shift=background.bounding_box[1],
-                svg_max=background.bounding_box[3] - background.bounding_box[1],
-                _transform=lambda c, v: 2 * c - v,
-            ),
+            AxisManipulation(),
+            AxisManipulation(_transform=lambda c, v: 2 * c - v),
         )
 
         # Build the SVG elements
-        svg_map = svg.SVG(width=manipulation.x.svg_max, height=manipulation.y.svg_max)
+        svg_map = svg.SVG(width=800, height=800)
         svg_map.elements = [_SVG_DEFS]
 
         # Set map viewBox based on background map bounding box.
         svg_map.viewBox = svg.ViewBoxSpec(
             0,
             0,
-            manipulation.x.svg_max,
-            manipulation.y.svg_max,
+            800,
+            800,
         )
 
         # Map background.
