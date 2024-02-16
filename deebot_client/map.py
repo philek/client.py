@@ -158,7 +158,7 @@ class AxisManipulation:
     _transform: Callable[[float, float], float] | None = None
 
     def __post_init__(self) -> None:
-        self._svg_center = _OFFSET
+        self._svg_center = 0
 
     def transform(self, value: float) -> float:
         """Transform value."""
@@ -279,7 +279,7 @@ def _calc_value(value: float, axis_manipulation: AxisManipulation) -> float:
     try:
         if value is not None:
             # SVG allows sub-pixel precision, so we use floating point coordinates for better placement.
-            new_value = (float(value) / _PIXEL_WIDTH) + _OFFSET
+            new_value = (float(value) / _PIXEL_WIDTH) + 0
             new_value = axis_manipulation.transform(new_value)
 
             return round(new_value, _ROUND_TO_DIGITS)
@@ -508,8 +508,8 @@ class Map:
                 vector_effect="non-scaling-stroke",
                 transform=[
                     svg.Translate(
-                        _OFFSET,
-                        _OFFSET,
+                        0,
+                        0,
                     ),
                     svg.Scale(0.2, 0.2),
                 ],
@@ -625,10 +625,10 @@ class Map:
 
         # Set map viewBox based on background map bounding box.
         svg_map.viewBox = svg.ViewBoxSpec(
-            0,
-            0,
-            800,
-            800,
+            -400,
+            -400,
+            400,
+            400,
         )
 
         # Map background.
