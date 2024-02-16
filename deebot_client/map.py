@@ -508,8 +508,8 @@ class Map:
                 vector_effect="non-scaling-stroke",
                 transform=[
                     svg.Translate(
-                        _OFFSET - map_manipulation.x.map_shift,
-                        _OFFSET - map_manipulation.y.map_shift,
+                        _OFFSET,
+                        _OFFSET,
                     ),
                     svg.Scale(0.2, 0.2),
                 ],
