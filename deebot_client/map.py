@@ -309,8 +309,8 @@ def _calc_point(
     unbounded = _calc_unbounded_point(x, y, map_manipulation)
 
     return Point(
-        min(map_manipulation.x.svg_max, max(0, unbounded.x)),
-        min(map_manipulation.y.svg_max, max(0, unbounded.y)),
+        min(800, max(0, unbounded.x)),
+        min(800, max(0, unbounded.y)),
     )
 
 
