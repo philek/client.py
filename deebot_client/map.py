@@ -637,7 +637,7 @@ class Map:
         )
 
         # Build the SVG elements
-        svg_map = svg.SVG(width=manipulation.x.svg_max, height=manipulation.y.svg_max)
+        svg_map = svg.SVG()
         svg_map.elements = [_SVG_DEFS]
 
         # Set map viewBox based on background map bounding box.
