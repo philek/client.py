@@ -157,6 +157,7 @@ class TracePoint(Point):
 class BackgroundImage:
     """Background image."""
 
+    bounding_box: tuple[float, float, float, float]
     image: bytes
 
 
@@ -171,7 +172,7 @@ class CalibrationPoint:
         object.__setattr__(
             self,
             "map",
-            _calc_unbounded_point(self.vacuum.x, self.vacuum.y),
+            Point(self.vacuum.x, -self.vacuum.y),
         )
 
 
@@ -254,13 +255,6 @@ def _decompress_7z_base64_data(data: str) -> bytes:
     return decompressed_data
 
 
-def _calc_unbounded_point(
-    x: float,
-    y: float,
-) -> Point:
-    return Point(x, -y)
-
-
 def _points_to_svg_path(
     points: Sequence[Point | TracePoint],
 ) -> list[svg.PathData]:
@@ -293,9 +287,12 @@ def _get_svg_positions(
 ) -> list[svg.Element]:
     svg_positions: list[svg.Element] = []
     for position in sorted(positions, key=lambda x: _POSITIONS_SVG[x.type].order):
-        pos = _calc_unbounded_point(position.x, position.y)
         svg_positions.append(
-            svg.Use(href=f"#{_POSITIONS_SVG[position.type].svg_id}", x=pos.x, y=pos.y)
+            svg.Use(
+                href=f"#{_POSITIONS_SVG[position.type].svg_id}",
+                x=position.x,
+                y=-position.y,
+            )
         )
 
     return svg_positions
@@ -307,9 +304,9 @@ def _get_svg_subset(
     subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
 
     points = [
-        _calc_unbounded_point(
+        Point(
             subset_coordinates[i],
-            subset_coordinates[i + 1],
+            -subset_coordinates[i + 1],
         )
         for i in range(0, len(subset_coordinates), 2)
     ]
@@ -521,6 +518,11 @@ class Map:
         image = Image.new("P", (8 * MapPiece.CONST_SIZE, 8 * MapPiece.CONST_SIZE))
         self._draw_map_pieces(image)
 
+        bounding_box = image.getbbox()
+        if bounding_box is None:
+            return None
+
+        #    image = ImageOps.flip(image.crop(bounding_box))
         image = ImageOps.flip(image)
         image = _set_image_palette(image)
 
@@ -528,6 +530,7 @@ class Map:
         image.save(buffered, format="PNG", optimize=True)
 
         return BackgroundImage(
+            bounding_box,
             buffered.getvalue(),
         )
 
