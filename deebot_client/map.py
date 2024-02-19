@@ -306,12 +306,7 @@ def _calc_point(
     y: float,
     map_manipulation: MapManipulation,
 ) -> Point:
-    unbounded = _calc_unbounded_point(x, y, map_manipulation)
-
-    return Point(
-        min(800, max(0, unbounded.x)),
-        min(800, max(0, unbounded.y)),
-    )
+    return _calc_unbounded_point(x, y, map_manipulation)
 
 
 def _points_to_svg_path(
@@ -620,20 +615,22 @@ class Map:
         )
 
         # Build the SVG elements
-        svg_map = svg.SVG(width=800, height=800)
+        svg_map = svg.SVG()
         svg_map.elements = [_SVG_DEFS]
 
         # Set map viewBox based on background map bounding box.
         svg_map.viewBox = svg.ViewBoxSpec(
             -400,
             -400,
-            400,
-            400,
+            800,
+            800,
         )
 
         # Map background.
         svg_map.elements.append(
             svg.Image(
+                x=-400,
+                y=-400,
                 style="image-rendering: pixelated",
                 href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
             )
