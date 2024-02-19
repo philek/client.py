@@ -154,30 +154,6 @@ class TracePoint(Point):
 
 
 @dataclasses.dataclass
-class AxisManipulation:
-    """Map manipulation."""
-
-    _transform: Callable[[float, float], float] | None = None
-
-    def __post_init__(self) -> None:
-        self._svg_center = 0
-
-    def transform(self, value: float) -> float:
-        """Transform value."""
-        if self._transform is None:
-            return value
-        return self._transform(self._svg_center, value)
-
-
-@dataclasses.dataclass
-class MapManipulation:
-    """Map manipulation."""
-
-    x: AxisManipulation
-    y: AxisManipulation
-
-
-@dataclasses.dataclass
 class BackgroundImage:
     """Background image."""
 
@@ -190,13 +166,12 @@ class CalibrationPoint:
 
     vacuum: Point
     map: Point = dataclasses.field(init=False)
-    manipulation: dataclasses.InitVar[MapManipulation]
 
-    def __post_init__(self, manipulation: MapManipulation) -> None:
+    def __post_init__(self) -> None:
         object.__setattr__(
             self,
             "map",
-            _calc_unbounded_point(self.vacuum.x, self.vacuum.y, manipulation),
+            _calc_unbounded_point(self.vacuum.x, self.vacuum.y),
         )
 
 
@@ -279,38 +254,11 @@ def _decompress_7z_base64_data(data: str) -> bytes:
     return decompressed_data
 
 
-def _calc_value(value: float, axis_manipulation: AxisManipulation) -> float:
-    try:
-        if value is not None:
-            # SVG allows sub-pixel precision, so we use floating point coordinates for better placement.
-            new_value = (float(value) / _PIXEL_WIDTH) + 0
-            new_value = axis_manipulation.transform(new_value)
-
-            return round(new_value, _ROUND_TO_DIGITS)
-
-    except (ZeroDivisionError, ValueError):
-        pass
-
-    return 0
-
-
 def _calc_unbounded_point(
     x: float,
     y: float,
-    map_manipulation: MapManipulation,
 ) -> Point:
-    return Point(
-        _calc_value(x, map_manipulation.x),
-        _calc_value(y, map_manipulation.y),
-    )
-
-
-def _calc_point(
-    x: float,
-    y: float,
-    map_manipulation: MapManipulation,
-) -> Point:
-    return _calc_unbounded_point(x, y, map_manipulation)
+    return Point(x, -y)
 
 
 def _points_to_svg_path(
@@ -342,11 +290,10 @@ def _points_to_svg_path(
 
 def _get_svg_positions(
     positions: list[Position],
-    map_manipulation: MapManipulation,
 ) -> list[svg.Element]:
     svg_positions: list[svg.Element] = []
     for position in sorted(positions, key=lambda x: _POSITIONS_SVG[x.type].order):
-        pos = _calc_point(position.x, position.y, map_manipulation)
+        pos = _calc_unbounded_point(position.x, position.y)
         svg_positions.append(
             svg.Use(href=f"#{_POSITIONS_SVG[position.type].svg_id}", x=pos.x, y=pos.y)
         )
@@ -356,15 +303,13 @@ def _get_svg_positions(
 
 def _get_svg_subset(
     subset: MapSubsetEvent,
-    map_manipulation: MapManipulation,
 ) -> Path | svg.Polygon:
     subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
 
     points = [
-        _calc_point(
+        _calc_unbounded_point(
             subset_coordinates[i],
             subset_coordinates[i + 1],
-            map_manipulation,
         )
         for i in range(0, len(subset_coordinates), 2)
     ]
@@ -495,7 +440,6 @@ class Map:
 
     def _get_svg_traces_path(
         self,
-        map_manipulation: MapManipulation,
     ) -> Path | None:
         if len(self._map_data.trace_values) > 0:
             _LOGGER.debug("[get_svg_map] Draw Trace")
@@ -613,11 +557,6 @@ class Map:
             self._last_image = None
             return None
 
-        manipulation = MapManipulation(
-            AxisManipulation(),
-            AxisManipulation(_transform=lambda c, v: 2 * c - v),
-        )
-
         # Build the SVG elements
         svg_map = svg.SVG()
         svg_map.elements = [_SVG_DEFS]
@@ -644,14 +583,11 @@ class Map:
 
         # Additional subsets (VirtualWalls and NoMopZones)
         svg_map.elements.extend(
-            [
-                _get_svg_subset(subset, manipulation)
-                for subset in self._map_data.map_subsets.values()
-            ]
+            [_get_svg_subset(subset) for subset in self._map_data.map_subsets.values()]
         )
 
         # Traces (if any)
-        if svg_traces_path := self._get_svg_traces_path(manipulation):
+        if svg_traces_path := self._get_svg_traces_path():
             svg_map.elements.append(
                 # Elements to vertically flip
                 svg.G(
@@ -662,12 +598,10 @@ class Map:
             )
 
         # Bot and Charge stations
-        svg_map.elements.extend(
-            _get_svg_positions(self._map_data.positions, manipulation)
-        )
+        svg_map.elements.extend(_get_svg_positions(self._map_data.positions))
 
         points = tuple(
-            CalibrationPoint(point, manipulation)
+            CalibrationPoint(point)
             for point in (Point(0, 0), Point(0, 100000), Point(100000, 0))
         )
 
