@@ -98,7 +98,7 @@ class Path(svg.Path):  # noqa: TID251
 
 
 _LOGGER = get_logger(__name__)
-_PIXEL_WIDTH = 50
+_PIXEL_WIDTH = 1
 _MAP_ZOOM = 50 / _PIXEL_WIDTH
 _ROUND_TO_DIGITS = 3
 
