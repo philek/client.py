@@ -99,6 +99,7 @@ class Path(svg.Path):  # noqa: TID251
 
 _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 50
+_MAP_ZOOM = 50 / _PIXEL_WIDTH
 _ROUND_TO_DIGITS = 3
 
 
@@ -480,9 +481,9 @@ class Map:
         for i in range(64):
             if i > 0:
                 if i % 8 != 0:
-                    image_y += MapPiece._SIZE
+                    image_y += MapPiece.CONST_SIZE
                 else:
-                    image_x += MapPiece._SIZE
+                    image_x += MapPiece.CONST_SIZE
                     image_y = 0
 
             current_piece = self._map_data.map_pieces[i]
@@ -620,17 +621,19 @@ class Map:
 
         # Set map viewBox based on background map bounding box.
         svg_map.viewBox = svg.ViewBoxSpec(
-            -400,
-            -400,
-            800,
-            800,
+            -400 * _MAP_ZOOM,
+            -400 * _MAP_ZOOM,
+            800 * _MAP_ZOOM,
+            800 * _MAP_ZOOM,
         )
 
         # Map background.
         svg_map.elements.append(
             svg.Image(
-                x=-400,
-                y=-400,
+                x=-400 * _MAP_ZOOM,
+                y=-400 * _MAP_ZOOM,
+                width=800 * _MAP_ZOOM,
+                height=800 * _MAP_ZOOM,
                 style="image-rendering: pixelated",
                 href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
             )
@@ -680,7 +683,7 @@ class MapPiece:
     """Map piece representation."""
 
     _NOT_INUSE_CRC32: int = 1295764014
-    _SIZE: int = 200
+    CONST_SIZE: int = 100
 
     def __init__(self, on_change: Callable[[], None], index: int) -> None:
         self._on_change = on_change
@@ -707,7 +710,7 @@ class MapPiece:
     def image(self) -> Image.Image:
         """I'm the 'x' property."""
         if not self.in_use or self._image is None:
-            return Image.new("P", (MapPiece._SIZE, MapPiece._SIZE))
+            return Image.new("P", (MapPiece.CONST_SIZE, MapPiece.CONST_SIZE))
         return self._image
 
     def update_points(self, base64_data: str) -> None:
@@ -721,7 +724,13 @@ class MapPiece:
 
         if self.in_use:
             im = Image.frombytes(
-                "P", (MapPiece._SIZE, MapPiece._SIZE), decoded, "raw", "P", 0, -1
+                "P",
+                (MapPiece.CONST_SIZE, MapPiece.CONST_SIZE),
+                decoded,
+                "raw",
+                "P",
+                0,
+                -1,
             )
             self._image = im.rotate(-90)
         else:
