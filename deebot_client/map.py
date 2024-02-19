@@ -226,6 +226,7 @@ _SVG_DEFS = svg.Defs(
         # Bot circular icon
         svg.G(
             id=_POSITIONS_SVG[PositionType.DEEBOT].svg_id,
+            transform=[svg.Scale(_MAP_ZOOM)],
             elements=[
                 svg.Circle(
                     r=5, fill=f"url(#{_POSITIONS_SVG[PositionType.DEEBOT].svg_id}bg)"
@@ -236,6 +237,7 @@ _SVG_DEFS = svg.Defs(
         # Charger pin icon (pre-flipped vertically)
         svg.G(
             id=_POSITIONS_SVG[PositionType.CHARGER].svg_id,
+            transform=[svg.Scale(_MAP_ZOOM)],
             elements=[
                 Path(
                     fill="#ffe605",
