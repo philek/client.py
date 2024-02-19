@@ -101,6 +101,7 @@ _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 1
 _MAP_ZOOM = 50 / _PIXEL_WIDTH
 _ROUND_TO_DIGITS = 3
+_MAP_SIZE = 800 * _MAP_ZOOM
 
 
 @dataclasses.dataclass(frozen=True)
@@ -573,7 +574,7 @@ class Map:
 
     def _get_background_image(self) -> BackgroundImage | None:
         """Return background image."""
-        image = Image.new("P", (800, 800))
+        image = Image.new("P", (8 * MapPiece.CONST_SIZE, 8 * MapPiece.CONST_SIZE))
         self._draw_map_pieces(image)
 
         image = ImageOps.flip(image)
@@ -623,19 +624,19 @@ class Map:
 
         # Set map viewBox based on background map bounding box.
         svg_map.viewBox = svg.ViewBoxSpec(
-            -400 * _MAP_ZOOM,
-            -400 * _MAP_ZOOM,
-            800 * _MAP_ZOOM,
-            800 * _MAP_ZOOM,
+            -_MAP_SIZE / 2,
+            -_MAP_SIZE / 2,
+            _MAP_SIZE,
+            _MAP_SIZE,
         )
 
         # Map background.
         svg_map.elements.append(
             svg.Image(
-                x=-400 * _MAP_ZOOM,
-                y=-400 * _MAP_ZOOM,
-                width=800 * _MAP_ZOOM,
-                height=800 * _MAP_ZOOM,
+                x=-_MAP_SIZE / 2,
+                y=-_MAP_SIZE / 2,
+                width=_MAP_SIZE,
+                height=_MAP_SIZE,
                 style="image-rendering: pixelated",
                 href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
             )
