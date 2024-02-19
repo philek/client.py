@@ -480,9 +480,9 @@ class Map:
         for i in range(64):
             if i > 0:
                 if i % 8 != 0:
-                    image_y += 100
+                    image_y += MapPiece._SIZE
                 else:
-                    image_x += 100
+                    image_x += MapPiece._SIZE
                     image_y = 0
 
             current_piece = self._map_data.map_pieces[i]
@@ -680,6 +680,7 @@ class MapPiece:
     """Map piece representation."""
 
     _NOT_INUSE_CRC32: int = 1295764014
+    _SIZE: int = 200
 
     def __init__(self, on_change: Callable[[], None], index: int) -> None:
         self._on_change = on_change
@@ -706,7 +707,7 @@ class MapPiece:
     def image(self) -> Image.Image:
         """I'm the 'x' property."""
         if not self.in_use or self._image is None:
-            return Image.new("P", (100, 100))
+            return Image.new("P", (MapPiece._SIZE, MapPiece._SIZE))
         return self._image
 
     def update_points(self, base64_data: str) -> None:
@@ -719,7 +720,9 @@ class MapPiece:
             self._on_change()
 
         if self.in_use:
-            im = Image.frombytes("P", (100, 100), decoded, "raw", "P", 0, -1)
+            im = Image.frombytes(
+                "P", (MapPiece._SIZE, MapPiece._SIZE), decoded, "raw", "P", 0, -1
+            )
             self._image = im.rotate(-90)
         else:
             self._image = None
