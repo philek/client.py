@@ -566,21 +566,19 @@ class Map:
 
         # Set map viewBox based on background map bounding box.
         svg_map.viewBox = svg.ViewBoxSpec(
-            -_MAP_SIZE / 2,
-            -_MAP_SIZE / 2,
-            _MAP_SIZE,
-            _MAP_SIZE,
+            -_MAP_SIZE / 2 + background.bounding_box[0] * _MAP_ZOOM,
+            -_MAP_SIZE / 2 + (800 - background.bounding_box[3]) * _MAP_ZOOM,
+            (background.bounding_box[2] - background.bounding_box[0]) * _MAP_ZOOM,
+            (background.bounding_box[3] - background.bounding_box[1]) * _MAP_ZOOM,
         )
 
         # Map background.
         svg_map.elements.append(
             svg.Image(
-                x=-_MAP_SIZE / 2 + background.bounding_box[0] * _MAP_ZOOM,
-                y=-_MAP_SIZE / 2 + (800 - background.bounding_box[3]) * _MAP_ZOOM,
-                width=(background.bounding_box[2] - background.bounding_box[0])
-                * _MAP_ZOOM,
-                height=(background.bounding_box[3] - background.bounding_box[1])
-                * _MAP_ZOOM,
+                x=svg_map.viewBox.min_x,
+                y=svg_map.viewBox.min_y,
+                width=svg_map.viewBox.width,
+                height=svg_map.viewBox.height,
                 style="image-rendering: pixelated",
                 href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
             )
