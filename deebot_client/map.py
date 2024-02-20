@@ -576,7 +576,7 @@ class Map:
         svg_map.elements.append(
             svg.Image(
                 x=-_MAP_SIZE / 2 + background.bounding_box[0] * _MAP_ZOOM,
-                y=-_MAP_SIZE / 2 + background.bounding_box[1] * _MAP_ZOOM,
+                y=-_MAP_SIZE / 2 + (800 - background.bounding_box[3]) * _MAP_ZOOM,
                 width=(background.bounding_box[2] - background.bounding_box[0])
                 * _MAP_ZOOM,
                 height=(background.bounding_box[3] - background.bounding_box[1])
