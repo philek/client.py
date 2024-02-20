@@ -164,29 +164,6 @@ class BackgroundImage:
     image: bytes
 
 
-@dataclasses.dataclass(frozen=True)
-class CalibrationPoint:
-    """Calibration point."""
-
-    vacuum: Point
-    map: Point = dataclasses.field(init=False)
-
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "map",
-            Point(self.vacuum.x, -self.vacuum.y),
-        )
-
-
-@dataclasses.dataclass(frozen=True)
-class CalibratedMap:
-    """Map image with calibration points."""
-
-    calibration_points: tuple[CalibrationPoint, ...]
-    image: str
-
-
 # SVG definitions referred by map elements
 _SVG_DEFS = svg.Defs(
     elements=[
@@ -364,7 +341,7 @@ class Map:
 
         self._map_data: Final[MapData] = MapData(event_bus)
         self._amount_rooms: int = 0
-        self._last_image: CalibratedMap | None = None
+        self._last_image: str | None = None
         self._unsubscribers: list[Callable[[], None]] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
@@ -526,7 +503,6 @@ class Map:
             return None
 
         image = ImageOps.flip(image.crop(bounding_box))
-        # image = ImageOps.flip(image)
         image = _set_image_palette(image)
 
         buffered = BytesIO()
@@ -538,13 +514,6 @@ class Map:
         )
 
     def get_svg_map(self) -> str | None:
-        """Return map as SVG string and set of calibration points."""
-        map = self.get_calibrated_map()
-        if map is None:
-            return None
-        return map.image
-
-    def get_calibrated_map(self) -> CalibratedMap | None:
         """Return map as SVG string."""
         if not self._unsubscribers:
             raise MapError("Please enable the map first")
@@ -607,12 +576,7 @@ class Map:
         # Bot and Charge stations
         svg_map.elements.extend(_get_svg_positions(self._map_data.positions))
 
-        points = tuple(
-            CalibrationPoint(point)
-            for point in (Point(0, 0), Point(0, 100000), Point(100000, 0))
-        )
-
-        self._last_image = CalibratedMap(calibration_points=points, image=str(svg_map))
+        self._last_image = str(svg_map)
         _LOGGER.debug("[get_svg_map] Finish")
         return self._last_image
 
