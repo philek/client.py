@@ -522,8 +522,8 @@ class Map:
         if bounding_box is None:
             return None
 
-        #    image = ImageOps.flip(image.crop(bounding_box))
-        image = ImageOps.flip(image)
+        image = ImageOps.flip(image.crop(bounding_box))
+        # image = ImageOps.flip(image)
         image = _set_image_palette(image)
 
         buffered = BytesIO()
@@ -575,10 +575,12 @@ class Map:
         # Map background.
         svg_map.elements.append(
             svg.Image(
-                x=-_MAP_SIZE / 2,
-                y=-_MAP_SIZE / 2,
-                width=_MAP_SIZE,
-                height=_MAP_SIZE,
+                x=-_MAP_SIZE / 2 + background.bounding_box[0] * _MAP_ZOOM,
+                y=-_MAP_SIZE / 2 + background.bounding_box[1] * _MAP_ZOOM,
+                width=(background.bounding_box[2] - background.bounding_box[0])
+                * _MAP_ZOOM,
+                height=(background.bounding_box[3] - background.bounding_box[1])
+                * _MAP_ZOOM,
                 style="image-rendering: pixelated",
                 href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
             )
