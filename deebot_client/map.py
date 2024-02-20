@@ -98,10 +98,14 @@ class Path(svg.Path):  # noqa: TID251
 
 
 _LOGGER = get_logger(__name__)
-_PIXEL_WIDTH = 1
-_MAP_ZOOM = 50 / _PIXEL_WIDTH
+
+_PIXEL_SIZE = 50
+_PIECE_PIXELS = 100
+_PIECE_COUNT = 8
+_BACKGROUND_SIZE = _PIECE_PIXELS * _PIECE_COUNT
+_MAP_SIZE = _BACKGROUND_SIZE * _PIXEL_SIZE
+
 _ROUND_TO_DIGITS = 3
-_MAP_SIZE = 800 * _MAP_ZOOM
 
 
 @dataclasses.dataclass(frozen=True)
@@ -115,7 +119,6 @@ _POSITIONS_SVG = {
     PositionType.CHARGER: _PositionSvg(1, "c"),
 }
 
-_OFFSET = 400
 _TRACE_MAP = "trace_map"
 _COLORS = {
     _TRACE_MAP: "#fff",
@@ -203,7 +206,7 @@ _SVG_DEFS = svg.Defs(
         # Bot circular icon
         svg.G(
             id=_POSITIONS_SVG[PositionType.DEEBOT].svg_id,
-            transform=[svg.Scale(_MAP_ZOOM)],
+            transform=[svg.Scale(_PIXEL_SIZE)],
             elements=[
                 svg.Circle(
                     r=5, fill=f"url(#{_POSITIONS_SVG[PositionType.DEEBOT].svg_id}bg)"
@@ -214,7 +217,7 @@ _SVG_DEFS = svg.Defs(
         # Charger pin icon (pre-flipped vertically)
         svg.G(
             id=_POSITIONS_SVG[PositionType.CHARGER].svg_id,
-            transform=[svg.Scale(_MAP_ZOOM)],
+            transform=[svg.Scale(_PIXEL_SIZE)],
             elements=[
                 Path(
                     fill="#ffe605",
@@ -423,12 +426,12 @@ class Map:
         image_x = 0
         image_y = 0
 
-        for i in range(64):
+        for i in range(_PIECE_COUNT * _PIECE_COUNT):
             if i > 0:
-                if i % 8 != 0:
-                    image_y += MapPiece.CONST_SIZE
+                if i % _PIECE_COUNT != 0:
+                    image_y += _PIECE_PIXELS
                 else:
-                    image_x += MapPiece.CONST_SIZE
+                    image_x += _PIECE_PIXELS
                     image_y = 0
 
             current_piece = self._map_data.map_pieces[i]
@@ -515,7 +518,7 @@ class Map:
 
     def _get_background_image(self) -> BackgroundImage | None:
         """Return background image."""
-        image = Image.new("P", (8 * MapPiece.CONST_SIZE, 8 * MapPiece.CONST_SIZE))
+        image = Image.new("P", (_BACKGROUND_SIZE, _BACKGROUND_SIZE))
         self._draw_map_pieces(image)
 
         bounding_box = image.getbbox()
@@ -566,10 +569,11 @@ class Map:
 
         # Set map viewBox based on background map bounding box.
         svg_map.viewBox = svg.ViewBoxSpec(
-            -_MAP_SIZE / 2 + background.bounding_box[0] * _MAP_ZOOM,
-            -_MAP_SIZE / 2 + (800 - background.bounding_box[3]) * _MAP_ZOOM,
-            (background.bounding_box[2] - background.bounding_box[0]) * _MAP_ZOOM,
-            (background.bounding_box[3] - background.bounding_box[1]) * _MAP_ZOOM,
+            -_MAP_SIZE / 2 + background.bounding_box[0] * _PIXEL_SIZE,
+            -_MAP_SIZE / 2
+            + (_BACKGROUND_SIZE - background.bounding_box[3]) * _PIXEL_SIZE,
+            (background.bounding_box[2] - background.bounding_box[0]) * _PIXEL_SIZE,
+            (background.bounding_box[3] - background.bounding_box[1]) * _PIXEL_SIZE,
         )
 
         # Map background.
@@ -623,7 +627,6 @@ class MapPiece:
     """Map piece representation."""
 
     _NOT_INUSE_CRC32: int = 1295764014
-    CONST_SIZE: int = 100
 
     def __init__(self, on_change: Callable[[], None], index: int) -> None:
         self._on_change = on_change
@@ -650,7 +653,7 @@ class MapPiece:
     def image(self) -> Image.Image:
         """I'm the 'x' property."""
         if not self.in_use or self._image is None:
-            return Image.new("P", (MapPiece.CONST_SIZE, MapPiece.CONST_SIZE))
+            return Image.new("P", (_PIECE_PIXELS, _PIECE_PIXELS))
         return self._image
 
     def update_points(self, base64_data: str) -> None:
@@ -665,7 +668,7 @@ class MapPiece:
         if self.in_use:
             im = Image.frombytes(
                 "P",
-                (MapPiece.CONST_SIZE, MapPiece.CONST_SIZE),
+                (_PIECE_PIXELS, _PIECE_PIXELS),
                 decoded,
                 "raw",
                 "P",
@@ -699,7 +702,8 @@ class MapData:
 
         self._on_change = on_change
         self._map_pieces: OnChangedList[MapPiece] = OnChangedList(
-            on_change, [MapPiece(on_change, i) for i in range(64)]
+            on_change,
+            [MapPiece(on_change, i) for i in range(_PIECE_COUNT * _PIECE_COUNT)],
         )
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: OnChangedList[Position] = OnChangedList(on_change)
